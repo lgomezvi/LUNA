@@ -1,3 +1,4 @@
+// src/lib/auth.ts
 import NextAuth from "next-auth"
 import Google from "next-auth/providers/google"
 import type { NextAuthConfig } from "next-auth"
@@ -10,17 +11,15 @@ export const config = {
         }),
     ],
     callbacks: {
-        authorized({ request, auth }) {
-            const { pathname } = request.nextUrl
-            if (pathname === "/dashboard") return !!auth
-            return true
-        },
         async session({ session, token }) {
             if (session.user) {
-                session.user.id = token.sub ?? ""
+                session.user.id = token.sub as string
             }
             return session
         },
+    },
+    pages: {
+        signOut: '/',
     },
 } satisfies NextAuthConfig
 

@@ -14,10 +14,10 @@ export function LoginButton() {
 
 export function LogoutButton() {
     return (
-        <Button variant="outline" onClick={() => signOut()}>
-            Sign Out
-        </Button>
-    )
+      <Button onClick={() => signOut({ callbackUrl: "/" })} variant="outline">
+        Sign Out
+      </Button>
+    );
 }
 
 export function AuthStatus() {
