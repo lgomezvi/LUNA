@@ -1,36 +1,49 @@
 // src/app/dashboard/page.tsx
-import { auth } from "@/lib/auth";
-import { getUserData } from "@/lib/actions/user";
-import { redirect } from "next/navigation";
-import { LogoutButton } from "@/components/auth-buttons";
+"use client";
 
-export default async function Dashboard() {
-  const session = await auth();
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { DashboardContent } from "@/components/dashboard-content";
+import { UserData } from "@/types";
 
-  if (!session?.user) {
-    redirect("/");
+export default function Dashboard() {
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const router = useRouter();
+
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const response = await fetch("/api/user");
+        if (!response.ok) {
+          if (response.status === 401) {
+            router.push("/");
+            return;
+          }
+          throw new Error("Failed to fetch user data");
+        }
+        const data = await response.json();
+        setUserData(data);
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchUserData();
+  }, [router]);
+
+  if (loading) {
+    return <div className="p-8">Loading...</div>;
   }
 
-  try {
-    const userData = await getUserData(session.user.email!);
+  // Get user session from userData
+  const user = {
+    name: userData?.name,
+    email: userData?.email,
+    image: userData?.image,
+  };
 
-    return (
-      <div className="p-8">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold">Welcome {session.user.name}</h1>
-          <LogoutButton />
-        </div>
-        <div>
-          <h2>Your Profile</h2>
-          <pre>{JSON.stringify(userData, null, 2)}</pre>
-        </div>
-      </div>
-    );
-  } catch (error) {
-    return (
-      <div className="p-8">
-        <h1>Error loading profile {String(error)}</h1>
-      </div>
-    );
-  }
+  return <DashboardContent user={user} userData={userData} />;
 }
