@@ -36,7 +36,7 @@ export function AuthStatus() {
 
   if (session) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col md:flex-row items-center gap-2">
         <Button
           variant="link"
           onClick={() => (window.location.href = "/dashboard")}

@@ -4,34 +4,6 @@ import connectDB from "@/lib/mongodb"
 import { User } from "@/models/user"
 import { auth } from "@/lib/auth"
 
-
-export async function POST(request: Request) {
-    try {
-        const userData = await request.json()
-        await connectDB()
-
-        const userExists = await User.findOne({ email: userData.email })
-
-        if (!userExists) {
-            await User.create(userData)
-        } else {
-            await User.findOneAndUpdate(
-                { email: userData.email },
-                userData,
-                { new: true }
-            )
-        }
-
-        return NextResponse.json({ success: true })
-    } catch (error) {
-        console.error('Error managing user:', error)
-        return NextResponse.json(
-            { error: 'Internal Server Error' },
-            { status: 500 }
-        )
-    }
-}
-
 export async function GET() {
     try {
         const session = await auth();
@@ -40,10 +12,22 @@ export async function GET() {
         }
 
         await connectDB();
-        const user = await User.findOne({ email: session.user.email });
+        let user = await User.findOne({ email: session.user.email });
 
+        // If user doesn't exist, create a new one with your schema's structure
         if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 });
+            user = await User.create({
+                email: session.user.email,
+                name: session.user.name,
+                image: session.user.image,
+                googleId: session.user.id, // Assuming this comes from Google OAuth
+                detailsCompleted: false,
+                allergies: [], // Empty array by default
+                cycleLength: 28, // Your default
+                periodLength: 5,  // Your default
+                // age and lastPeriodDate will be undefined until set by the user
+                // cycleRegularity will be set when user fills out details
+            });
         }
 
         // Convert MongoDB document to plain object and clean up sensitive/unnecessary fields
@@ -51,10 +35,12 @@ export async function GET() {
             name: user.name,
             email: user.email,
             detailsCompleted: user.detailsCompleted,
+            age: user.age,
             lastPeriodDate: user.lastPeriodDate,
             cycleRegularity: user.cycleRegularity,
-            allergies: user.allergies,
-            cycleLength: user.cycleLength
+            allergies: user.allergies || [], // Ensure we always return an array
+            cycleLength: user.cycleLength,
+            periodLength: user.periodLength
         };
 
         return NextResponse.json(userData);
@@ -66,7 +52,6 @@ export async function GET() {
         );
     }
 }
-
 
 export async function PUT(request: Request) {
     try {
@@ -87,15 +72,17 @@ export async function PUT(request: Request) {
             { new: true }
         );
 
-        // Clean up the response data
+        // Clean up the response data to match our GET response
         const userData = {
             name: updatedUser.name,
             email: updatedUser.email,
             detailsCompleted: updatedUser.detailsCompleted,
+            age: updatedUser.age,
             lastPeriodDate: updatedUser.lastPeriodDate,
             cycleRegularity: updatedUser.cycleRegularity,
-            allergies: updatedUser.allergies,
-            cycleLength: updatedUser.cycleLength
+            allergies: updatedUser.allergies || [],
+            cycleLength: updatedUser.cycleLength,
+            periodLength: updatedUser.periodLength
         };
 
         return NextResponse.json(userData);
