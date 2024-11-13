@@ -7,8 +7,13 @@ import { json } from "stream/consumers";
 
 export async function POST(request: Request) {
     try {
-        // Log the start of the request
         console.log('POST /api/user - Starting request');
+
+        // Connect to DB first
+        await connectDB().catch(error => {
+            console.error('Failed to connect to MongoDB:', error);
+            throw error;
+        });
 
         const session = await auth();
         if (!session?.user?.email) {
@@ -16,74 +21,52 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
-        // Log session data
-        console.log('POST /api/user - Session data:', {
-            email: session.user.email,
-            name: session.user.name
-        });
-
         const userData = await request.json();
-        await connectDB();
-
-        // Log the userData
         console.log('POST /api/user - User data to save:', userData);
 
-        // Validate required fields
-        if (!userData.email) {
-            console.log('POST /api/user - Missing email');
-            return NextResponse.json(
-                { error: "Email is required" },
-                { status: 400 }
-            );
-        }
-
-        try {
-            const user = await User.findOneAndUpdate(
-                { email: userData.email },
-                {
-                    $setOnInsert: {
-                        allergies: [],
-                        cycleLength: 28,
-                        periodLength: 5,
-                        symptoms: []
-                    },
-                    $set: {
-                        name: userData.name || '',
-                        image: userData.image || '',
-                        googleId: userData.googleId || '',
-                        email: userData.email
-                    }
+        const user = await User.findOneAndUpdate(
+            { email: userData.email },
+            {
+                $setOnInsert: {
+                    allergies: [],
+                    cycleLength: 28,
+                    periodLength: 5,
+                    symptoms: []
                 },
-                {
-                    upsert: true,
-                    new: true,
-                    runValidators: true
+                $set: {
+                    name: userData.name || '',
+                    image: userData.image || '',
+                    googleId: userData.googleId || '',
+                    email: userData.email
                 }
-            );
+            },
+            {
+                upsert: true,
+                new: true,
+                runValidators: true,
+                maxTimeMS: 20000 // Set maximum execution time to 20 seconds
+            }
+        ).exec(); // Add .exec() to ensure proper promise handling
 
-            console.log('POST /api/user - User saved successfully:', {
+        console.log('POST /api/user - User saved successfully:', {
+            email: user.email,
+            detailsCompleted: user.detailsCompleted
+        });
+
+        return NextResponse.json({
+            success: true,
+            user: {
+                name: user.name,
                 email: user.email,
                 detailsCompleted: user.detailsCompleted
-            });
-
-            return NextResponse.json({
-                success: true,
-                user: {
-                    name: user.name,
-                    email: user.email,
-                    detailsCompleted: user.detailsCompleted
-                }
-            });
-        } catch (dbError) {
-            console.error('POST /api/user - Database error:', dbError);
-            throw dbError; // Re-throw to be caught by outer try-catch
-        }
+            }
+        });
     } catch (error) {
         console.error('POST /api/user - Error:', error);
         return NextResponse.json(
             {
                 error: 'Internal Server Error',
-                details: JSON.stringify(error)
+                details: error instanceof Error ? error.message : String(error)
             },
             { status: 500 }
         );
