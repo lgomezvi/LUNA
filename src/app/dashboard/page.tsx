@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { DashboardContent } from "@/components/dashboard-content";
 import { UserData } from "@/types";
+import { GirlySpinner } from "@/components/girly-spinner";
 
 export default function Dashboard() {
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -35,7 +36,11 @@ export default function Dashboard() {
   }, [router]);
 
   if (loading) {
-    return <div className="p-8">Loading...</div>;
+    return (
+      <div className="p-8 w-full h-full flex items-center justify-center">
+        <GirlySpinner />
+      </div>
+    );
   }
 
   // Get user session from userData

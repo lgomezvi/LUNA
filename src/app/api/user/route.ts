@@ -4,6 +4,92 @@ import connectDB from "@/lib/mongodb"
 import { User } from "@/models/user"
 import { auth } from "@/lib/auth"
 
+export async function POST(request: Request) {
+    try {
+        // Log the start of the request
+        console.log('POST /api/user - Starting request');
+
+        const session = await auth();
+        if (!session?.user?.email) {
+            console.log('POST /api/user - No session or email');
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        // Log session data
+        console.log('POST /api/user - Session data:', {
+            email: session.user.email,
+            name: session.user.name
+        });
+
+        const userData = await request.json();
+        await connectDB();
+
+        // Log the userData
+        console.log('POST /api/user - User data to save:', userData);
+
+        // Validate required fields
+        if (!userData.email) {
+            console.log('POST /api/user - Missing email');
+            return NextResponse.json(
+                { error: "Email is required" },
+                { status: 400 }
+            );
+        }
+
+        try {
+            const user = await User.findOneAndUpdate(
+                { email: userData.email },
+                {
+                    $setOnInsert: {
+                        detailsCompleted: false,
+                        allergies: [],
+                        cycleLength: 28,
+                        periodLength: 5,
+                        symptoms: []
+                    },
+                    $set: {
+                        name: userData.name || '',
+                        image: userData.image || '',
+                        googleId: userData.googleId || '',
+                        email: userData.email
+                    }
+                },
+                { 
+                    upsert: true,
+                    new: true,
+                    runValidators: true
+                }
+            );
+
+            console.log('POST /api/user - User saved successfully:', {
+                email: user.email,
+                detailsCompleted: user.detailsCompleted
+            });
+
+            return NextResponse.json({ 
+                success: true,
+                user: {
+                    name: user.name,
+                    email: user.email,
+                    detailsCompleted: user.detailsCompleted
+                }
+            });
+        } catch (dbError) {
+            console.error('POST /api/user - Database error:', dbError);
+            throw dbError; // Re-throw to be caught by outer try-catch
+        }
+    } catch (error) {
+        console.error('POST /api/user - Error:', error);
+        return NextResponse.json(
+            { 
+                error: 'Internal Server Error',
+                details: error instanceof Error ? error.message : 'Unknown error'
+            },
+            { status: 500 }
+        );
+    }
+}
+
 export async function GET() {
     try {
         const session = await auth();
