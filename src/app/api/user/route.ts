@@ -41,7 +41,6 @@ export async function POST(request: Request) {
                 { email: userData.email },
                 {
                     $setOnInsert: {
-                        detailsCompleted: false,
                         allergies: [],
                         cycleLength: 28,
                         periodLength: 5,
