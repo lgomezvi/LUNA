@@ -8,6 +8,8 @@ import { LogoutButton } from "@/components/auth-buttons";
 import { UserData } from "@/types";
 import { Session } from "next-auth";
 import { CycleStatusCard } from "@/components/cycle-status";
+import { SymptomTracker } from "@/components/symptom-tracker";
+import { SymptomHistory } from "@/components/symptom-history";
 
 interface DashboardContentProps {
   user: Session["user"];
@@ -46,6 +48,11 @@ export function DashboardContent({ user, userData }: DashboardContentProps) {
               }
             }
           />
+
+          {/* Add Symptom Tracker - full width */}
+          <div className="col-span-full">
+            <SymptomTracker />
+          </div>
 
           {/* Today's Recommendations */}
           <Card>
@@ -97,6 +104,11 @@ export function DashboardContent({ user, userData }: DashboardContentProps) {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Add Symptom History - full width */}
+        <div className="col-span-full">
+          <SymptomHistory />
         </div>
       </div>
     </div>

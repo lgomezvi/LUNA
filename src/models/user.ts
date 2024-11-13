@@ -1,6 +1,29 @@
 // src/models/user.ts
 import mongoose from 'mongoose';
 
+const symptomSchema = new mongoose.Schema({
+    date: {
+        type: Date,
+        required: true
+    },
+    category: {
+        type: String,
+        enum: ['physical', 'emotional', 'other'],
+        required: true
+    },
+    type: {
+        type: String,
+        required: true
+    },
+    severity: {
+        type: Number,
+        min: 1,
+        max: 3,
+        required: true
+    },
+    notes: String
+}, { _id: true }); // Ensure each symptom gets an _id
+
 const userSchema = new mongoose.Schema({
     email: {
         type: String,
@@ -31,7 +54,8 @@ const userSchema = new mongoose.Schema({
     periodLength: {
         type: Number,
         default: 5
-    }
+    },
+    symptoms: [symptomSchema]
 }, {
     timestamps: true
 });

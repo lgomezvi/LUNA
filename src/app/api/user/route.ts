@@ -14,23 +14,22 @@ export async function GET() {
         await connectDB();
         let user = await User.findOne({ email: session.user.email });
 
-        // If user doesn't exist, create a new one with your schema's structure
+        // If user doesn't exist, create a new one
         if (!user) {
             user = await User.create({
                 email: session.user.email,
                 name: session.user.name,
                 image: session.user.image,
-                googleId: session.user.id, // Assuming this comes from Google OAuth
+                googleId: session.user.id,
                 detailsCompleted: false,
-                allergies: [], // Empty array by default
-                cycleLength: 28, // Your default
-                periodLength: 5,  // Your default
-                // age and lastPeriodDate will be undefined until set by the user
-                // cycleRegularity will be set when user fills out details
+                allergies: [],
+                cycleLength: 28,
+                periodLength: 5,
+                symptoms: [] // Initialize empty symptoms array
             });
         }
 
-        // Convert MongoDB document to plain object and clean up sensitive/unnecessary fields
+        // Convert MongoDB document to plain object
         const userData = {
             name: user.name,
             email: user.email,
@@ -38,9 +37,10 @@ export async function GET() {
             age: user.age,
             lastPeriodDate: user.lastPeriodDate,
             cycleRegularity: user.cycleRegularity,
-            allergies: user.allergies || [], // Ensure we always return an array
+            allergies: user.allergies || [],
             cycleLength: user.cycleLength,
-            periodLength: user.periodLength
+            periodLength: user.periodLength,
+            symptoms: user.symptoms || [] // Include symptoms in response
         };
 
         return NextResponse.json(userData);
