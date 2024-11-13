@@ -216,3 +216,50 @@ DB call for symptompts per day
  -> pop up for info
 
  
+
+ 🏆 TOP CHOICE - Personalized Health Insights & Recommendations API using Gemini
+
+What: Create an API endpoint that takes user's cycle data, symptoms, and preferences to generate personalized health insights
+Why Best:
+
+Directly addresses Women's Healthcare category
+Leverages existing cycle tracking functionality
+Relatively quick to implement with Gemini
+High impact for women's health
+Could win both Healthcare and Best Use of Gemini categories
+
+
+Implementation:
+
+Use Gemini to analyze patterns in user's cycle data
+Generate personalized nutrition, exercise, and wellness recommendations
+Provide culturally-aware health education and insights
+Include mental health support based on cycle phase
+
+Aligns with Multiple Prize Categories:
+
+Women's Healthcare ($7,500)
+Best Use of Gemini ($2,500)
+Most Impactful Project ($2,500)
+
+
+Demonstrates Innovation:
+
+Personalized health recommendations
+Cultural awareness
+Evidence-based insights
+
+
+Easy to Implement:
+
+Builds on existing functionality
+Clear API structure
+Quick to prototype
+
+
+High Impact:
+
+Provides actionable health insights
+Addresses global accessibility
+Supports women's health education.
+

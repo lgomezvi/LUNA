@@ -5,73 +5,6 @@ import { User } from "@/models/user"
 import { auth } from "@/lib/auth"
 import { json } from "stream/consumers";
 
-export async function POST(request: Request) {
-    try {
-        console.log('POST /api/user - Starting request');
-
-        // Connect to DB first
-        await connectDB().catch(error => {
-            console.error('Failed to connect to MongoDB:', error);
-            throw error;
-        });
-
-        const session = await auth();
-        if (!session?.user?.email) {
-            console.log('POST /api/user - No session or email');
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        const userData = await request.json();
-        console.log('POST /api/user - User data to save:', userData);
-
-        const user = await User.findOneAndUpdate(
-            { email: userData.email },
-            {
-                $setOnInsert: {
-                    allergies: [],
-                    cycleLength: 28,
-                    periodLength: 5,
-                    symptoms: []
-                },
-                $set: {
-                    name: userData.name || '',
-                    image: userData.image || '',
-                    googleId: userData.googleId || '',
-                    email: userData.email
-                }
-            },
-            {
-                upsert: true,
-                new: true,
-                runValidators: true,
-                maxTimeMS: 20000 // Set maximum execution time to 20 seconds
-            }
-        ).exec(); // Add .exec() to ensure proper promise handling
-
-        console.log('POST /api/user - User saved successfully:', {
-            email: user.email,
-            detailsCompleted: user.detailsCompleted
-        });
-
-        return NextResponse.json({
-            success: true,
-            user: {
-                name: user.name,
-                email: user.email,
-                detailsCompleted: user.detailsCompleted
-            }
-        });
-    } catch (error) {
-        console.error('POST /api/user - Error:', error);
-        return NextResponse.json(
-            {
-                error: 'Internal Server Error',
-                details: error instanceof Error ? error.message : String(error)
-            },
-            { status: 500 }
-        );
-    }
-}
 
 export async function GET() {
     try {
@@ -113,41 +46,176 @@ export async function GET() {
     }
 }
 
-export async function PUT(request: Request) {
+export async function POST(request: Request) {
     try {
+        console.log('POST /api/user - Starting request');
+
+        await connectDB().catch(error => {
+            console.error('Failed to connect to MongoDB:', error);
+            throw error;
+        });
+
         const session = await auth();
         if (!session?.user?.email) {
+            console.log('POST /api/user - No session or email');
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
+
+        const userData = await request.json();
+        console.log('POST /api/user - User data to save:', userData);
+
+        // Find the user first
+        const existingUser = await User.findOne({ email: userData.email });
+
+        // Prepare update that preserves existing data
+        const updateData = {
+            name: userData.name || existingUser?.name || '',
+            image: userData.image || existingUser?.image || '',
+            googleId: userData.googleId || existingUser?.googleId || '',
+            email: userData.email,
+            // Preserve these fields if they exist
+            detailsCompleted: existingUser?.detailsCompleted || false,
+            age: existingUser?.age,
+            languagePreference: existingUser?.languagePreference,
+            culturalBackground: existingUser?.culturalBackground,
+            dietaryPreference: existingUser?.dietaryPreference,
+            lastPeriodDate: existingUser?.lastPeriodDate,
+            cycleRegularity: existingUser?.cycleRegularity,
+            cycleLength: existingUser?.cycleLength || 28,
+            periodLength: existingUser?.periodLength || 5,
+            allergies: existingUser?.allergies || [],
+            exercisePreferences: existingUser?.exercisePreferences || [],
+            healthGoals: existingUser?.healthGoals,
+            hasHealthConditions: existingUser?.hasHealthConditions,
+            healthConditions: existingUser?.healthConditions,
+        };
+
+        const user = await User.findOneAndUpdate(
+            { email: userData.email },
+            updateData,
+            {
+                upsert: true,
+                new: true,
+                runValidators: true
+            }
+        );
+
+        console.log('POST /api/user - User saved successfully:', {
+            email: user.email,
+            detailsCompleted: user.detailsCompleted
+        });
+
+        return NextResponse.json({
+            success: true,
+            user: {
+                name: user.name,
+                email: user.email,
+                detailsCompleted: user.detailsCompleted
+            }
+        });
+    } catch (error) {
+        console.error('POST /api/user - Error:', error);
+        return NextResponse.json(
+            {
+                error: 'Internal Server Error',
+                details: error instanceof Error ? error.message : String(error)
+            },
+            { status: 500 }
+        );
+    }
+}
+
+export async function PUT(request: Request) {
+    const requestId = Math.random().toString(36).substring(7);
+
+    try {
+        console.log(`[${requestId}] PUT /api/user - Starting request`);
+
+        const session = await auth();
+        if (!session?.user?.email) {
+            console.log(`[${requestId}] Unauthorized - No session found`);
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+
+        console.log(`[${requestId}] User authenticated:`, session.user.email);
 
         const data = await request.json();
         await connectDB();
 
+        console.log(`[${requestId}] Attempting to update user with data:`, {
+            email: session.user.email,
+            age: data.age,
+            culturalBackground: data.culturalBackground,
+            dietaryPreference: data.dietaryPreference,
+            lastPeriodDate: data.lastPeriodDate,
+            cycleRegularity: data.cycleRegularity,
+            exercisePreferences: data.exercisePreferences
+        });
+
         const updatedUser = await User.findOneAndUpdate(
             { email: session.user.email },
             {
-                ...data,
-                detailsCompleted: true
+                $set: {
+                    age: data.age,
+                    languagePreference: data.languagePreference,
+                    culturalBackground: data.culturalBackground,
+                    dietaryPreference: data.dietaryPreference,
+                    lastPeriodDate: data.lastPeriodDate,
+                    cycleRegularity: data.cycleRegularity,
+                    cycleLength: data.cycleLength || 28,
+                    periodLength: data.periodLength || 5,
+                    allergies: data.allergies || [],
+                    exercisePreferences: data.exercisePreferences || [],
+                    healthGoals: data.healthGoals || '',
+                    hasHealthConditions: data.hasHealthConditions || false,
+                    healthConditions: data.healthConditions || '',
+                    detailsCompleted: true
+                }
             },
-            { new: true }
+            {
+                new: true,
+                runValidators: true
+            }
         );
 
-        // Clean up the response data to match our GET response
-        const userData = {
+        if (!updatedUser) {
+            console.log(`[${requestId}] User not found:`, session.user.email);
+            return NextResponse.json(
+                { error: "User not found" },
+                { status: 404 }
+            );
+        }
+
+        console.log(`[${requestId}] User updated successfully:`, {
+            email: updatedUser.email,
+            age: updatedUser.age,
+            detailsCompleted: updatedUser.detailsCompleted
+        });
+
+        const response = {
             name: updatedUser.name,
             email: updatedUser.email,
-            detailsCompleted: updatedUser.detailsCompleted,
             age: updatedUser.age,
+            languagePreference: updatedUser.languagePreference,
+            culturalBackground: updatedUser.culturalBackground,
+            dietaryPreference: updatedUser.dietaryPreference,
             lastPeriodDate: updatedUser.lastPeriodDate,
             cycleRegularity: updatedUser.cycleRegularity,
-            allergies: updatedUser.allergies || [],
             cycleLength: updatedUser.cycleLength,
-            periodLength: updatedUser.periodLength
+            periodLength: updatedUser.periodLength,
+            allergies: updatedUser.allergies,
+            exercisePreferences: updatedUser.exercisePreferences,
+            healthGoals: updatedUser.healthGoals,
+            hasHealthConditions: updatedUser.hasHealthConditions,
+            healthConditions: updatedUser.healthConditions,
+            detailsCompleted: updatedUser.detailsCompleted
         };
 
-        return NextResponse.json(userData);
+        console.log(`[${requestId}] Request completed successfully`);
+        return NextResponse.json(response);
+
     } catch (error) {
-        console.error("Error updating user details:", error);
+        console.error(`[${requestId}] Error updating user:`, error);
         return NextResponse.json(
             { error: "Internal Server Error" },
             { status: 500 }
