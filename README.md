@@ -1,14 +1,41 @@
-# Next.js Authentication Project
+# Luna - Personal Cycle Tracking App
 
-A modern web application demonstrating user authentication with Google Sign-In, MongoDB database integration, and a clean architecture using Next.js 14.
+A modern, secure menstrual cycle tracking application built with Next.js 14, featuring Google authentication, personalized cycle predictions, and health recommendations.
 
 ## Project Overview
 
-This project shows how to:
-- Let users sign in with their Google account
-- Store user information in a MongoDB database
-- Create protected routes (pages only logged-in users can see)
-- Use modern web development tools and practices
+Luna helps users:
+- Track their menstrual cycle securely and privately
+- Get personalized health recommendations based on cycle phase
+- Monitor cycle regularity and patterns
+- Receive nutrition and exercise guidance aligned with their cycle
+- Manage health information with a user-friendly interface
+
+## Key Features
+
+1. **Secure Authentication**
+   - Google Sign-In integration
+   - Protected user data
+   - Personalized dashboard access
+
+2. **Cycle Tracking**
+   - Cycle phase prediction
+   - Period tracking
+   - Cycle length monitoring
+   - Irregularity tracking
+
+3. **Health Recommendations**
+   - Phase-specific nutrition advice
+   - Customized exercise suggestions
+   - Personalized wellness tips
+   - Allergy awareness integration
+
+4. **User Experience**
+   - Clean, intuitive interface
+   - Mobile-responsive design
+   - Personalized dashboard
+   - Easy data input
+
 
 ## Project Structure
 
@@ -22,30 +49,34 @@ src/
 │   └── page.tsx          # Homepage
 ├── components/            # Reusable React components
 │   ├── auth-buttons.tsx  # Login/Logout buttons
-│   └── auth-handler.tsx  # Handles user data storage
+│   ├── cycle-status.tsx  # Cycle tracking display
+│   └── user-details-form.tsx  # Profile setup
 ├── lib/                  # Utility functions and configurations
 │   ├── auth.ts          # Authentication setup
 │   └── mongodb.ts       # Database connection
+│   └── cycle-helpers.ts # Cycle calculations
 └── models/              # Database models
     └── user.ts          # User data structure
 ```
 
-## Key Features
+## Technical Implementation
 
-1. **Authentication (auth.ts)**
-   - Uses NextAuth.js for Google Sign-In
-   - Manages user sessions
-   - Protects routes from unauthorized access
+### Frontend Technologies
+- Next.js 14
+- React 18
+- Tailwind CSS
+- shadcn/ui components
+- TypeScript
 
-2. **Database Integration (mongodb.ts)**
-   - Connects to MongoDB
-   - Stores user information
-   - Updates user data when they log in
+### Backend Services
+- MongoDB (user data storage)
+- NextAuth.js (authentication)
+- Google OAuth2
 
-3. **Protected Dashboard (dashboard/page.tsx)**
-   - Only accessible to logged-in users
-   - Displays user profile information
-   - Includes sign-out functionality
+### Key Components
+- `CycleStatusCard`: Displays current cycle phase and recommendations
+- `UserDetailsForm`: Collects user cycle information
+- `DashboardContent`: Main user interface
 
 ## How It Works
 
@@ -91,7 +122,7 @@ src/
    - Create a MongoDB Atlas account
    - Create a new cluster
    - Get your connection string
-   - Replace `<password>` with your database password
+   - Update MONGODB_URI in `.env.local`
 
 5. Run the development server:
    ```bash
@@ -109,7 +140,6 @@ src/
 
 ### Frontend Components
 - `auth-buttons.tsx`: Login/Logout button components
-- `auth-handler.tsx`: Manages user data synchronization
 - `dashboard/page.tsx`: Protected user dashboard
 
 ### Backend Components
