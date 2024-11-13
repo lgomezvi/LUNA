@@ -42,7 +42,8 @@ export interface CyclePhase {
     description: string;
     nutrition: string[];
     exercise: string[];
-    color: string; // Tailwind class for text color
+    color: string;
+    duration: number;
 }
 
 export interface CycleStatus {
@@ -50,4 +51,8 @@ export interface CycleStatus {
     dayOfCycle: number;
     nextPeriod: number;
     isIrregular: boolean;
+    phaseStartDate: Date | null;
+    phaseEndDate: Date | null;
+    daysUntilNextPhase: number;
+    nextPhase: CyclePhase | null;
 }

@@ -76,11 +76,22 @@ export function HealthInsights({ userData }: HealthInsightsProps) {
 
   const cycleStatus: CycleStatus = calculateCycleStatus(userData);
 
+
   const fetchInsights = async () => {
     setLoading(true);
     setError(null);
 
     try {
+      // Get latest user data
+      const userResponse = await fetch("/api/user");
+      if (!userResponse.ok) {
+        throw new Error("Failed to fetch user data");
+      }
+      const userData = await userResponse.json();
+
+      // Calculate cycle status
+      const cycleStatus = calculateCycleStatus(userData);
+
       const response = await fetch("/api/health-insights", {
         method: "POST",
         headers: {
@@ -89,11 +100,28 @@ export function HealthInsights({ userData }: HealthInsightsProps) {
         body: JSON.stringify({
           cyclePhase: cycleStatus.currentPhase.name,
           dayOfCycle: cycleStatus.dayOfCycle,
+          nextPhase: cycleStatus.nextPhase?.name,
+          daysUntilNextPhase: cycleStatus.daysUntilNextPhase,
+          currentPhaseDescription: cycleStatus.currentPhase.description,
+          phaseStartDate: cycleStatus.phaseStartDate,
+          phaseEndDate: cycleStatus.phaseEndDate,
           symptoms: [],
           allergies: userData.allergies || [],
           preferences: {
-            // Add any user preferences here
+            diet: userData.dietaryPreference,
+            culture: userData.culturalBackground,
+            exercise: userData.exercisePreferences,
+            language: userData.languagePreference
           },
+          healthContext: {
+            hasConditions: userData.hasHealthConditions,
+            conditions: userData.healthConditions,
+            goals: userData.healthGoals
+          },
+          nextPeriod: cycleStatus.nextPeriod,
+          cycleRegularity: userData.cycleRegularity,
+          cycleLength: userData.cycleLength,
+          periodLength: userData.periodLength
         }),
       });
 
@@ -111,7 +139,6 @@ export function HealthInsights({ userData }: HealthInsightsProps) {
       setLoading(false);
     }
   };
-
   return (
     <div className="space-y-6">
       {/* Cycle Status Section */}

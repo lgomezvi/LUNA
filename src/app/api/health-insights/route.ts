@@ -15,18 +15,41 @@ interface Symptom {
 }
 
 interface HealthContext {
+    // Cycle Status Information
     cyclePhase: string;
     dayOfCycle: number;
+    phaseDescription: string;
+    recommendedNutrition: string[];
+    recommendedExercise: string[];
+    isIrregular: boolean;
+    currentPhaseColor: string;
+    phaseDuration: number;
+    phaseStartDate: Date;
+    phaseEndDate: Date;
+    daysUntilNextPhase: number;
+    nextPhase?: string;
+
+    // User Data
     symptoms: Symptom[];
     allergies: string[];
     preferences: {
-        diet?: string;
-        exercise?: string;
-        lifestyle?: string;
+        diet: string;
+        culture: string;
+        exercise: string[];
+        language: string;
     };
-    culturalContext?: string;
-}
+    healthContext: {
+        hasConditions: boolean;
+        conditions: string;
+        goals: string;
+    };
 
+    // Cycle Data
+    nextPeriod: Date;
+    cycleRegularity: string;
+    cycleLength: number;
+    periodLength: number;
+}
 export async function POST(request: Request) {
     try {
         const session = await auth();
@@ -41,7 +64,6 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
-        // Get recent symptoms (last 7 days)
         const recentDate = new Date();
         recentDate.setDate(recentDate.getDate() - 7);
 
@@ -49,81 +71,92 @@ export async function POST(request: Request) {
             .filter((s: Symptom) => new Date(s.date) >= recentDate)
             .sort((a: Symptom, b: Symptom) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-        // Analyze symptom patterns
         const symptomAnalysis = analyzeSymptoms(recentSymptoms);
-
-        console.log("Symptom analysis:", symptomAnalysis);
-    
-
         const data: HealthContext = await request.json();
 
-        // Enhanced prompt with symptom analysis
-        const prompt = `As a women's health expert, provide personalized health insights and recommendations. 
-Consider this detailed context:
+        console.log("Health insights request data:", data);
 
-CYCLE INFORMATION:
-- Current Phase: ${data.cyclePhase}
-- Day of Cycle: ${data.dayOfCycle}
+        const prompt = `You are a deeply empathetic women's health expert with extensive knowledge of ${data.preferences.culture} cultural wellness traditions. Your role is to be a supportive guide while providing personalized health insights that honor both traditional wisdom and modern understanding.
 
-RECENT SYMPTOM PATTERNS:
-${formatSymptomAnalysis(symptomAnalysis)}
+        PERSONAL PROFILE:
+        🎯 Goals: ${data.healthContext.goals}
+        🏃‍♀️ Favorite Activities: ${data.preferences.exercise.join(", ")}
+        🍽️ Dietary Practice: ${data.preferences.diet}
+        🌍 Cultural Heritage: ${data.preferences.culture}
+        🗣️ Language: ${data.preferences.language}
+        
+        CYCLE JOURNEY:
+        📅 Current Phase: ${data.cyclePhase} (Day ${data.dayOfCycle} of ${data.cycleLength})
+        ⏱️ Cycle Pattern: ${data.cycleRegularity} cycles, ${data.periodLength} days period
+        📆 Next Period: ${new Date(data.nextPeriod).toLocaleDateString()}
+        
+        WELLNESS PROFILE:
+        🏥 Health Considerations: ${data.healthContext.hasConditions ? data.healthContext.conditions : 'No reported conditions'}
+        ⚠️ Allergies: ${user.allergies?.join(", ") || "None reported"}
+        
+        YOUR RECENT PATTERNS:
+        ${formatSymptomAnalysis(symptomAnalysis)}
+        
+        Please provide caring, culturally-sensitive guidance in exactly this format:
+        
+        1. SYMPTOM MANAGEMENT
+        Current symptom recommendations for your ${data.cyclePhase} phase:
+        Gentle prevention strategies aligned with your traditions:
+        Important signs to be mindful of:
+        
+        2. NUTRITION PLAN
+        Nourishing ${data.preferences.diet} foods for your current phase:
+        Foods to mindfully avoid during this time:
+        Supportive supplements to consider:
+        
+        3. PHYSICAL WELLNESS
+        Harmonious ${data.preferences.exercise.join("/")} practices:
+        Mindful movement adjustments for your energy:
+        Restorative techniques from your heritage:
+        
+        4. MENTAL WELLNESS
+        Calming practices from your cultural tradition:
+        Supportive daily rituals for emotional balance:
+        Mindfulness practices that honor your background:
+        
+        5. CYCLE INSIGHTS
+        Understanding your unique pattern:
+        Gentle adjustments for your ${data.cycleRegularity} cycle:
+        Preparing for your next phase with care:
+        
+        Remember to format each insight as follows:
+        - Keep the exact five numbered sections
+        - Maintain these precise section titles
+        - Use colons for subsections
+        - Place each recommendation on its own line
+        - Avoid bullet points or special characters
+        - Keep language warm and supportive
+        - Make each suggestion specific and actionable
+        - Honor cultural wisdom while maintaining format
+        
+        Share your wisdom with compassion and understanding, keeping these format guidelines intact for clarity. Each recommendation should feel like a supportive friend offering culturally-sensitive guidance while maintaining the structured format.`;
 
-HEALTH CONTEXT:
-- Allergies: ${user.allergies?.join(", ") || "None reported"}
-- Cycle Regularity: ${user.cycleRegularity || "Not specified"}
-- Cycle Length: ${user.cycleLength} days
-${data.preferences.diet ? `- Dietary Preferences: ${data.preferences.diet}` : ''}
-${data.preferences.exercise ? `- Exercise Preferences: ${data.preferences.exercise}` : ''}
-${data.culturalContext ? `- Cultural Context: ${data.culturalContext}` : ''}
-
-Based on the provided context, please provide detailed advice in these specific sections:
-
-1. SYMPTOM MANAGEMENT
-- Current symptom recommendations
-- Preventive measures
-- Warning signs to watch for
-
-2. NUTRITION PLAN
-- Phase-specific foods to eat
-- Foods to avoid
-- Supplement considerations
-
-3. PHYSICAL WELLNESS
-- Recommended exercises
-- Activity modifications
-- Recovery techniques
-
-4. MENTAL WELLNESS
-- Stress management
-- Mood support
-- Mindfulness practices
-
-5. CYCLE INSIGHTS
-- Pattern analysis
-- Lifestyle adjustments
-- Next phase preparation
-
-Please provide clear, practical advice for each bullet point and include scientific reasoning where relevant. Format each section with the number and title in capital letters, followed by bullet points for specific recommendations.`;
 
         const model = genAI.getGenerativeModel({ model: "gemini-pro" });
         const result = await model.generateContent(prompt);
         const response = await result.response;
         const text = response.text();
-        console.log("Generated health insights:", text);
 
-        // Enhanced response parsing
         const sections = parseResponse(text);
-        console.log("Parsed health insights:", sections);
+
+
+        console.log("Health insights generated successfully:", sections);
 
         return NextResponse.json({
             insights: sections,
             cycleContext: {
                 phase: data.cyclePhase,
                 day: data.dayOfCycle,
+                nextPeriod: data.nextPeriod,
                 symptomAnalysis
             },
             timestamp: new Date(),
-            nextUpdateRecommended: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours from now
+            nextUpdateRecommended: new Date(Date.now() + 24 * 60 * 60 * 1000)
         });
     } catch (error) {
         console.error("Error generating health insights:", error);
