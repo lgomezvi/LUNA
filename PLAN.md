@@ -204,3 +204,15 @@ POST /api/checkin
    - Daily mood tracking
    - Physical symptoms
    - Basic reminders
+
+### Calendar
+
+Showcase the bleeding week
+- slider to show amount of blood
+
+Shades of red - prediction && truth
+Add other 3 phases diff colors
+DB call for symptompts per day 
+ -> pop up for info
+
+ 

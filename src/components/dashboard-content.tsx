@@ -10,6 +10,7 @@ import { Session } from "next-auth";
 import { CycleStatusCard } from "@/components/cycle-status";
 import { SymptomTracker } from "@/components/symptom-tracker";
 import { SymptomHistory } from "@/components/symptom-history";
+import { HealthInsights } from "@/components/health-insights";
 
 interface DashboardContentProps {
   user: Session["user"];
@@ -39,12 +40,13 @@ export function DashboardContent({ user, userData }: DashboardContentProps) {
 
         {/* Main Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <CycleStatusCard
+          <HealthInsights
             userData={
               userData as {
                 lastPeriodDate?: string;
                 cycleRegularity?: string;
                 cycleLength?: number;
+                allergies?: string[];
               }
             }
           />
