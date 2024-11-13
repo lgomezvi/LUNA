@@ -3,6 +3,7 @@ import { NextResponse } from "next/server"
 import connectDB from "@/lib/mongodb"
 import { User } from "@/models/user"
 import { auth } from "@/lib/auth"
+import { json } from "stream/consumers";
 
 export async function POST(request: Request) {
     try {
@@ -82,7 +83,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
             { 
                 error: 'Internal Server Error',
-                details: error instanceof Error ? error.message : 'Unknown error'
+                details: JSON.stringify(error)
             },
             { status: 500 }
         );
