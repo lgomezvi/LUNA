@@ -54,7 +54,7 @@ export async function POST(request: Request) {
                         email: userData.email
                     }
                 },
-                { 
+                {
                     upsert: true,
                     new: true,
                     runValidators: true
@@ -66,7 +66,7 @@ export async function POST(request: Request) {
                 detailsCompleted: user.detailsCompleted
             });
 
-            return NextResponse.json({ 
+            return NextResponse.json({
                 success: true,
                 user: {
                     name: user.name,
@@ -81,7 +81,7 @@ export async function POST(request: Request) {
     } catch (error) {
         console.error('POST /api/user - Error:', error);
         return NextResponse.json(
-            { 
+            {
                 error: 'Internal Server Error',
                 details: JSON.stringify(error)
             },
@@ -92,48 +92,39 @@ export async function POST(request: Request) {
 
 export async function GET() {
     try {
-        const session = await auth();
+        // Run auth and DB connection in parallel
+        const [session, _] = await Promise.all([
+            auth(),
+            connectDB()
+        ]);
+
         if (!session?.user?.email) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+            return NextResponse.json(
+                { error: "Unauthorized" },
+                { status: 401 }
+            );
         }
 
-        await connectDB();
-        let user = await User.findOne({ email: session.user.email });
+        // Use lean() for faster queries
+        const user = await User.findOne({
+            email: session.user.email
+        }).lean();
 
-        // If user doesn't exist, create a new one
         if (!user) {
-            user = await User.create({
+            const newUser = await User.create({
                 email: session.user.email,
                 name: session.user.name,
-                image: session.user.image,
-                googleId: session.user.id,
                 detailsCompleted: false,
-                allergies: [],
-                cycleLength: 28,
-                periodLength: 5,
-                symptoms: [] // Initialize empty symptoms array
             });
+            return NextResponse.json(newUser);
         }
 
-        // Convert MongoDB document to plain object
-        const userData = {
-            name: user.name,
-            email: user.email,
-            detailsCompleted: user.detailsCompleted,
-            age: user.age,
-            lastPeriodDate: user.lastPeriodDate,
-            cycleRegularity: user.cycleRegularity,
-            allergies: user.allergies || [],
-            cycleLength: user.cycleLength,
-            periodLength: user.periodLength,
-            symptoms: user.symptoms || [] // Include symptoms in response
-        };
+        return NextResponse.json(user);
 
-        return NextResponse.json(userData);
     } catch (error) {
-        console.error("Error fetching user:", error);
+        console.error("Error:", error);
         return NextResponse.json(
-            { error: "Internal Server Error" },
+            { error: "Server Error" },
             { status: 500 }
         );
     }
